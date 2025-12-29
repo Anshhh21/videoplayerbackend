@@ -1,0 +1,15 @@
+{
+  "name": "02proj",
+  "version": "1.0.0",
+  "description": " backend 1st",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "js",
+    "backend"
+  ],
+  "author": "Ansh Sharma",
+  "license": "ISC"
+}
