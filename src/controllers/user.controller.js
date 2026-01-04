@@ -20,7 +20,7 @@ const registerUser = asyncHandler(async (req, res) => {
     
 // check if user already exists: username, email
 
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [{ username },{ email }]
     })
         if(existedUser){
@@ -28,7 +28,13 @@ const registerUser = asyncHandler(async (req, res) => {
         }
 // check for images, check for avatar    
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    //const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
+    
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required")
     }
@@ -39,23 +45,24 @@ const registerUser = asyncHandler(async (req, res) => {
     if (!avatar) {
         throw new ApiError(400, "Avatar file is required")
     }
-
+// create user object - create entry in db
     const user = await User.create({
-        fullName
-        , email
-        , avatar: avatar.url
-        , coverImage: coverImage?.url || '',
+        fullName,
+        avatar: avatar.url,
+        coverImage: coverImage?.url || "",
+        email, 
         password,
         username: username.toLowerCase()
     })
-    
+    // remove password and refresh token field from response
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"
     )
+// check for user creation
     if(!createdUser){
         throw new ApiError (500, "user creation failed")
     }
-
+// return res
     return res.status(201).json(
         new ApiResponse(
             200,
@@ -63,28 +70,7 @@ const registerUser = asyncHandler(async (req, res) => {
             "User registered successfully"
         )
     )
-    // let coverImageLocalPath;
-    // if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
-    // coverImageLocalPath = req.files.coverImage[0].path
-    // }
-    
 
-    
-
-   
-    
-
-
-
-
-
-
-    
-    
-    // create user object - create entry in db
-    // remove password and refresh token field from response
-    // check for user creation
-    // return res
 })
 
 export { registerUser };  
