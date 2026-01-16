@@ -12,6 +12,82 @@ const getAllVideos = asyncHandler(async (req, res) => {
     //TODO: get all videos based on query, sort, pagination
 
 
+    
+    if (!req.user) {
+        throw new ApiError(401, "User needs to be logged in");
+    }
+    
+    
+    const match = {
+        ...(query ? { title: { $regex: query, $options: "i" } } : {}), 
+        ...(userId ? { owner: mongoose.Types.ObjectId(userId) } : {}), 
+    };
+    
+    const videos = await Video.aggregate([
+        {
+        $match: match,
+        },
+    
+        {
+        $lookup: {
+            from: "users",
+            localField: "owner", 
+            foreignField: "_id",
+            as: "videosByOwner", 
+        },
+        },
+    
+        {
+        
+        $project: {
+            videoFile: 1, 
+            thumbnail: 1, 
+            title: 1, 
+            description: 1, 
+            duration: 1, 
+            views: 1, 
+            isPublished: 1, 
+            owner: {
+            $arrayElemAt: ["$videosByOwner", 0], 
+            },
+        },
+        },
+    
+        {
+        
+        $sort: {
+            [sortBy]: sortType === "desc" ? -1 : 1,
+        },
+        },
+    
+        {
+        
+          $skip: (page - 1) * parseInt(limit),
+        },
+        {
+            
+            $limit: parseInt(limit),
+        },
+        ]);
+
+        
+        if (!videos?.length) {
+        throw new ApiError(404, "Videos are not found");
+        }
+
+        
+        return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200, 
+                videos, 
+                "Videos fetched successfully"
+            )
+        );
+
+        
+
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
